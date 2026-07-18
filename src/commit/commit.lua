@@ -10,12 +10,17 @@ function commit.create(message, author, serialized_data, repo_path)
         return nil, "failed to store snapshot"
     end
     local parent = config.read_head(repo_path)
+    -- Only set parent if HEAD has a valid commit hash
+    if parent and #parent == 0 then
+        parent = nil
+    end
     local timestamp = os.date("%Y-%m-%dT%H:%M:%S")
-    local content = snapshot_id .. "\n" .. message .. "\n" .. author .. "\n" .. timestamp .. "\n" .. (parent or "") .. "\n"
+    local content_parts = {snapshot_id, message, author, timestamp, parent or ""}
+    local content = table.concat(content_parts, "\n") .. "\n"
     local commit_id = sha256.hash_string(content)
     local commit_dir = repo_path .. "/.roae/commits"
-    os.execute('if not exist "' .. commit_dir .. '" mkdir "' .. commit_dir .. '" 2>nul')
-    os.execute('mkdir -p "' .. commit_dir .. '" 2>/dev/null')
+    local mkdir_cmd = 'if not exist "' .. commit_dir:gsub("/", "\\") .. '" mkdir "' .. commit_dir:gsub("/", "\\") .. '"'
+    os.execute(mkdir_cmd)
     local f = io.open(commit_dir .. "/" .. commit_id, "w")
     if not f then
         return nil, "failed to write commit"
@@ -29,10 +34,10 @@ function commit.create(message, author, serialized_data, repo_path)
     f:close()
     config.write_head(commit_id, repo_path)
     local log_path = repo_path .. "/.roae/log"
-    f = io.open(log_path, "a")
-    if f then
-        f:write(commit_id:sub(1, 8) .. " " .. message .. "\n")
-        f:close()
+    local log_f = io.open(log_path, "a")
+    if log_f then
+        log_f:write(commit_id:sub(1, 8) .. " " .. message .. "\n")
+        log_f:close()
     end
     return commit_id, {
         id = commit_id,
@@ -56,6 +61,7 @@ function commit.load(commit_id, repo_path)
         id = commit_id,
         short_id = commit_id:sub(1, 8),
         tree = nil,
+        snapshot = nil,
         parent = nil,
         author = "",
         timestamp = "",
@@ -64,14 +70,16 @@ function commit.load(commit_id, repo_path)
     for line in f:lines() do
         if line:match("^tree ") then
             data.tree = line:match("^tree (.+)$")
+            data.snapshot = data.tree
         elseif line:match("^parent ") then
             data.parent = line:match("^parent (.+)$")
-        elseif line:match("^author ") then
+        elseif
             local rest = line:match("^author (.+)$")
-            local ts = rest:match("^(.+) %d%d%d%d%-%d%d%-%d%d")
-            if ts then
-                data.author = ts:match("^(.+) %d%d:%d%d:%d%d") or ts
-                data.timestamp = ts:match("%d%d%d%d%-%d%d%-%d%d %d%d:%d%d:%d%d") or ""
+            -- Format: "Name YYYY-MM-DDTHH:MM:SS"
+            local author_name, ts = rest:match("^(.+) (.-)$")
+            if author_name and ts then
+                data.author = author_name
+                data.timestamp = ts
             else
                 data.author = rest
             end

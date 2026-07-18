@@ -1,5 +1,5 @@
 local cmd = {}
-local commit = require("src.commit.commit")
+local commit_mod = require("src.commit.commit")
 local config = require("src.repo.config")
 
 cmd.name = "commit"
@@ -18,21 +18,14 @@ function cmd.execute(args)
     end
     local message = args[1]
     local author = config.load(repo_path).author or "unknown"
-    local ok, result = pcall(function()
-        return commit.create(message, author, "snapshot_data_placeholder", repo_path)
-    end)
-    if not ok then
-        print("Error: " .. tostring(result))
-        return 1
-    end
-    local commit_id, data = result
+    local commit_id, commit_data = commit_mod.create(message, author, "snapshot_data_placeholder", repo_path)
     if not commit_id then
-        print("Error: " .. tostring(data))
+        print("Error: " .. tostring(commit_data))
         return 1
     end
-    print("[" .. data.short_id .. "] " .. data.message)
-    print("Author: " .. data.author)
-    print("Date: " .. data.timestamp)
+    print("[" .. commit_data.short_id .. "] " .. commit_data.message)
+    print("Author: " .. commit_data.author)
+    print("Date: " .. commit_data.timestamp)
     return 0
 end
 

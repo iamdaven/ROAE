@@ -38,8 +38,9 @@ local function assert_true(condition, name)
     end
 end
 
+-- Clean up any previous test artifacts
 os.execute('rmdir /s /q "' .. test_dir .. '" 2>nul')
-os.execute('rm -rf "' .. test_dir .. '" 2>/dev/null')
+os.execute('if exist ".roae" rmdir /s /q ".roae" 2>nul')
 
 print("ROAE Integration Test")
 print(string.rep("=", 50))
@@ -76,16 +77,14 @@ assert_equal(serialized, decompressed, "Decompressed data matches original")
 print("")
 
 print("Step 4: Initialize test repository")
-os.execute('if not exist "' .. test_dir .. '" mkdir "' .. test_dir .. '" 2>nul')
-os.execute('mkdir -p "' .. test_dir .. '" 2>/dev/null')
-
+os.execute('if not exist "' .. test_dir .. '" mkdir "' .. test_dir .. '"')
 local repo_init = require("src.repo.init")
 local ok, msg = repo_init.init("TestRepo", "Tester")
 assert_true(ok, "Repository initialized: " .. msg)
-print("  Repo root: " .. (test_dir))
+-- Move .roae to test dir
+os.execute('if exist ".roae" move /y ".roae" "' .. test_dir .. '\\"')
+print("  Repo root: " .. test_dir)
 print("")
-
-os.execute('if exist ".roae" move /y ".roae" "' .. test_dir .. '\\" 2>nul')
 
 print("Step 5: Store snapshot")
 local snapshot_id = storage.generate_id(serialized)
@@ -167,9 +166,7 @@ print("")
 
 print("Step 15: Cleanup")
 os.execute('rmdir /s /q "' .. test_dir .. '" 2>nul')
-os.execute('rm -rf "' .. test_dir .. '" 2>/dev/null')
 os.execute('if exist ".roae" rmdir /s /q ".roae" 2>nul')
-os.execute('rm -rf ".roae" 2>/dev/null')
 print("  Test directory removed")
 print("")
 

@@ -1,8 +1,10 @@
 local decompressor = {}
 
+local MAGIC = {0x52, 0x4F, 0x41, 0x45}
+
 local function check_magic(data, pos)
     for i = 1, 4 do
-        if string.byte(data, pos + i - 1) ~= ({0x52, 0x4F, 0x41, 0x45})[i] then
+        if string.byte(data, pos + i - 1) ~= MAGIC[i] then
             return false
         end
     end
@@ -60,24 +62,28 @@ function decompressor.decompress(data)
                 pos = pos + count
             end
         elseif token == 0x81 then
+            -- Short run of same byte
             local run_len = string.byte(data, pos)
             pos = pos + 1
             local val = string.byte(data, pos)
             pos = pos + 1
             parts[#parts + 1] = string.rep(string.char(val), run_len)
         elseif token == 0x82 then
+            -- Long run of same byte
             local kind = string.byte(data, pos)
             pos = pos + 1
             local run_len = read_u16(data, pos)
             pos = pos + 2
             if kind == 0 then
-                parts[#parts + 1] = string.char(0):rep(run_len)
+                -- Zero run
+                parts[#parts + 1] = string.rep(string.char(0), run_len)
             else
                 local val = string.byte(data, pos)
                 pos = pos + 1
                 parts[#parts + 1] = string.rep(string.char(val), run_len)
             end
         elseif token == 0x83 then
+            -- Dictionary reference
             local idx = string.byte(data, pos)
             pos = pos + 1
             local entry = dict[idx]
@@ -87,24 +93,16 @@ function decompressor.decompress(data)
                 return nil, "bad dict ref " .. idx
             end
         elseif token == 0x84 then
+            -- Short zero run (was redundant with 0x82 kind=0, but kept for compat)
             local run_len = string.byte(data, pos)
             pos = pos + 1
-            if run_len >= 1024 then
-                local chunk = string.char(0):rep(1024)
-                local remaining = run_len
-                while remaining > 0 do
-                    local take = remaining > 1024 and 1024 or remaining
-                    parts[#parts + 1] = string.sub(chunk, 1, take)
-                    remaining = remaining - take
-                end
-            else
-                parts[#parts + 1] = string.char(0):rep(run_len)
-            end
+            parts[#parts + 1] = string.rep(string.char(0), run_len)
         else
             return nil, "bad token " .. token
         end
     end
     local result = table.concat(parts)
+    -- Verify checksum if present
     local checksum_pos = n - 3
     if checksum_pos > pos then
         local stored = read_u32(data, checksum_pos)

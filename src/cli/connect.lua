@@ -33,9 +33,14 @@ function cmd.execute(args)
         print("")
         print("Bridge server stopped")
     end
-    signal.signal("INT", stop_handler)
+    -- Cross-platform sleep loop
     while running do
-        os.execute("timeout /t 1 >nul 2>&1")
+        local ok = pcall(function()
+            os.execute("timeout /t 1 >nul 2>&1")
+        end)
+        if not ok then
+            os.execute("sleep 1 2>/dev/null")
+        end
     end
     return 0
 end

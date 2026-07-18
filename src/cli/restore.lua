@@ -1,6 +1,7 @@
 local cmd = {}
-local history = require("src.commit.history")
+local history_mod = require("src.commit.history")
 local manager = require("src.snapshot.manager")
+local config = require("src.repo.config")
 
 cmd.name = "restore"
 cmd.description = "Restore a previous Roblox project version"
@@ -11,9 +12,13 @@ function cmd.execute(args)
         print("Usage: roae restore <commit>")
         return 1
     end
-    local repo_path = "."
+    local repo_path = config.find_root(".")
+    if not repo_path then
+        print("Error: not a ROAE repository")
+        return 1
+    end
     local commit_id = args[1]
-    local info, data = history.get_commit(commit_id, repo_path)
+    local info, data = history_mod.get_commit(commit_id, repo_path)
     if not info then
         print("Error: commit not found")
         return 1

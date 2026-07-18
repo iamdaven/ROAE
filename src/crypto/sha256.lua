@@ -17,7 +17,7 @@ local K = {
     0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
     0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
     0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
-    0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,a
+    0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
     0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
     0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
@@ -75,13 +75,9 @@ local function compress(state, block)
         local not_e = (~e) & 0xffffffff
         local T1 = (h + sum1(e) + ((e & f) ~ (not_e & g)) + K[t] + w[t]) & 0xffffffff
         local T2 = (sum0(a) + ((a & b) ~ (a & c) ~ (b & c))) & 0xffffffff
-        h = g
-        g = f
-        f = e
+        h = g; g = f; f = e
         e = (d + T1) & 0xffffffff
-        d = c
-        c = b
-        b = a
+        d = c; c = b; b = a
         a = (T1 + T2) & 0xffffffff
     end
     state[1] = (state[1] + a) & 0xffffffff
@@ -106,7 +102,7 @@ end
 local function bytes_to_hex(bytes)
     local hex = {}
     for i = 1, #bytes do
-        hex[#hex + 1] = string.format("%02x", bytes[i])
+        hex[i] = string.format("%02x", bytes[i])
     end
     return table.concat(hex)
 end
@@ -114,7 +110,7 @@ end
 local function string_to_bytes(str)
     local bytes = {}
     for i = 1, #str do
-        bytes[#bytes + 1] = string.byte(str, i)
+        bytes[i] = string.byte(str, i)
     end
     return bytes
 end

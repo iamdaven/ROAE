@@ -1,7 +1,6 @@
 local manager = {}
 local storage = require("src.snapshot.storage")
 local sha256 = require("src.crypto.sha256")
-local compressor = require("src.compression.compressor")
 
 function manager.create_snapshot(serialized_data, repo_path)
     repo_path = repo_path or "."
@@ -41,8 +40,6 @@ function manager.compute_changes(old_data, new_data)
     if old_data == new_data then
         return {total_changes = 0, added = 0, removed = 0, modified = 0}
     end
-    local old_hash = sha256.hash_string(old_data)
-    local new_hash = sha256.hash_string(new_data)
     local changes = {total_changes = 1, added = 0, removed = 0, modified = 1}
     if #new_data > #old_data then
         changes.added = #new_data - #old_data

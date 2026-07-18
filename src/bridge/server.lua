@@ -1,7 +1,14 @@
 local server = {}
-local socket = require("socket")
+
+local function safe_socket()
+    local ok, sock = pcall(require, "socket")
+    if ok then return sock end
+    return nil
+end
 
 function server.find_free_port()
+    local socket = safe_socket()
+    if not socket then return 54321 end
     local s = socket.tcp()
     s:setoption("reuseaddr", true)
     s:bind("127.0.0.1", 0)
@@ -11,6 +18,10 @@ function server.find_free_port()
 end
 
 function server.start(port, on_connect, on_message, on_disconnect)
+    local socket = safe_socket()
+    if not socket then
+        return nil, "LuaSocket not available"
+    end
     port = port or server.find_free_port()
     local s = socket.tcp()
     s:setoption("reuseaddr", true)
@@ -33,7 +44,7 @@ function server.start(port, on_connect, on_message, on_disconnect)
                     client:settimeout(0)
                     clients[client] = {connected = true, last_seen = os.time()}
                     if on_connect then
-                        on_connect(client)
+                        pcall(on_connect, client)
                     end
                 else
                     client:close()

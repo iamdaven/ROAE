@@ -1,7 +1,14 @@
-local client = {}
-local socket = require("socket")
+local bridge_client = {}
 
-function client.connect(host, port, auth_token)
+local function safe_socket()
+    local ok, sock = pcall(require, "socket")
+    if ok then return sock end
+    return nil
+end
+
+function bridge_client.connect(host, port, auth_token)
+    local socket = safe_socket()
+    if not socket then return nil, "LuaSocket not available" end
     host = host or "127.0.0.1"
     port = port or 54321
     local s = socket.tcp()
@@ -46,4 +53,4 @@ function client.connect(host, port, auth_token)
     }
 end
 
-return client
+return bridge_client
