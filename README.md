@@ -1,6 +1,6 @@
-# ROAE - Roblox Version Control System
+# ROAE
 
-ROAE (R-Oh-Ay-Ee) is a custom Roblox-focused version control system. It consists of a Lua desktop application that manages repositories, commits, snapshots, compression, and communication with Roblox Studio, along with a Luau Roblox Studio plugin that provides access to Roblox data.
+ROAE (R-Oh-Ay-Ee) is a custom Roblox focused version control system. It consists of a Lua desktop application that manages repositories, commits, snapshots, compression, and communication with Roblox Studio, along with a Luau Roblox Studio plugin that provides access to Roblox data.
 ## Usage
 
 ```
